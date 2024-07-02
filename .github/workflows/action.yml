@@ -27,19 +27,6 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/api-${{ secrets.NIM }}:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/api-${{ secrets.NIM }}:latest
 
-      - name: Create .kube directory
-        run: |
-          mkdir -p $HOME/.kube
-
-      - name: Deploy to Kubernetes
-        env:
-          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-          NIM: ${{ secrets.NIM }}
-          NAMA: ${{ secrets.NAMA }}
-        run: |
-          echo "$KUBE_CONFIG_DATA" | base64 --decode > $HOME/.kube/config
-          kubectl apply -f k8s/
-
       - name: Deployment using curl
         run: |
           curl -X POST http://154.26.139.201:8080/deploy \
