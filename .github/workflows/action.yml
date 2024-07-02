@@ -27,6 +27,10 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/api-${{ secrets.NIM }}:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/api-${{ secrets.NIM }}:latest
 
+      - name: Create .kube directory
+        run: |
+          mkdir -p $HOME/.kube
+
       - name: Deploy to Kubernetes
         env:
           KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
