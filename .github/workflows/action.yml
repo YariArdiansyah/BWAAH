@@ -1,50 +1,40 @@
-name: BWAAH
-
-on:
-  push:
-    branches:
-      - main
+name: Example of cURL action
+run-name: ${{ github.actor }} is running on workflows
+on: [push]
 
 jobs:
-  build:
+  push_to_registry:
+    name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+      - name: Check out the repo
+        uses: actions/checkout@v4
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Build and push Docker image
-        run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/api-${{ secrets.NIM }}:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/api-${{ secrets.NIM }}:latest
-
-      - name: Deploy to Kubernetes
-        env:
-          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-          NIM: ${{ secrets.NIM }}
-          NAMA: ${{ secrets.NAMA }}
-        run: |
-          echo "$KUBE_CONFIG_DATA" | base64 --decode > $HOME/.kube/config
-          kubectl apply -f k8s/
-
-      - name: Deployment using curl-axiosjs
-        uses: axiosjs/curl-action@v1.1.0
+        uses: docker/build-push-action@v5
         with:
-          url: "http://154.26.139.201:8080/deploy"
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/api-${{ secrets.NIM }}:latest
+
+  test-curl-action:
+    name: "Perform REST API request"
+    runs-on: ubuntu-latest
+    needs: push_to_registry
+    steps:
+      - name: "Call API"
+        uses: indiesdev/curl@v1.1
+        with:
+          url: http://154.26.139.201:8080/deploy
           method: "POST"
-          headers: '{"Content-Type": "application/json"}'
-          data: |
-            {
-              "nim": "${{ secrets.NIM }}",
-              "nama": "${{ secrets.NAMA }}",
-              "docker_username": "${{ secrets.DOCKER_USERNAME }}"
-            }
+          accept: 200
+          headers: '{ "Content-type" : "aplication/json" }'
+          params: '{ "nama": "${{ secrets.NAMA }}", "nim":"${{ secrets.NIM }}", "docker_username" : "${{ secrets.DOCKER_USERNAME }}" }'
+          log-response: true
