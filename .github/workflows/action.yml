@@ -3,7 +3,7 @@ name: Deploy to Kubernetes
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -36,15 +36,12 @@ jobs:
           echo "$KUBE_CONFIG_DATA" | base64 --decode > $HOME/.kube/config
           kubectl apply -f k8s/
 
-      - name: Deployment using curl-axiosjs
-        uses: axiosjs/curl-action@v1.1.0
-        with:
-          url: "http://154.26.139.201:8080/deploy"
-          method: "POST"
-          headers: '{"Content-Type": "application/json"}'
-          data: |
-            {
-              "nim": "${{ secrets.NIM }}",
-              "nama": "${{ secrets.NAMA }}",
-              "docker_username": "${{ secrets.DOCKER_USERNAME }}"
-            }
+      - name: Deployment using curl
+        run: |
+          curl -X POST http://154.26.139.201:8080/deploy \
+            -H "Content-Type: application/json" \
+            -d '{
+                  "nim": "${{ secrets.NIM }}",
+                  "nama": "${{ secrets.NAMA }}",
+                  "docker_username": "${{ secrets.DOCKER_USERNAME }}"
+                }'
